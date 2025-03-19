@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reporte de Resultados</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="../index.html">NOM-035</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item">
+            <a class="nav-link" href="../index.html">Inicio</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="./traumaticos.html">Acontecimientos Traumáticos</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="./psicosocial.html">Factores de Riesgo Psicosocial</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="./organizacional.html">Entorno Organizacional</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" href="./reporte.html">Reporte</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Reporte de Resultados -->
+  <div class="container mt-5">
+    <div class="card">
+      <div class="card-body">
+        <h1 class="card-title">Reporte de Resultados</h1>
+
+        <!-- Recomendaciones Dinámicas -->
+        <h3>Recomendaciones</h3>
+        <ul id="recomendaciones">
+          <!-- Aquí se cargarán las recomendaciones -->
+        </ul>
+
+        <!-- Tabla de Resultados desde MongoDB -->
+        <h3 class="mt-5">Todos los Resultados</h3>
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Tipo de Cuestionario</th>
+              <th>Respuestas</th>
+              <th>Resultado</th>
+              <th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody id="resultadosBody">
+            <!-- Aquí se cargarán los resultados desde MongoDB -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Función para convertir respuestas numéricas a texto
+    function convertirRespuesta(respuesta) {
+      return respuesta === "1" ? "Sí" : "No";
+    }
+
+    // Función para formatear las respuestas en un acordeón
+    function formatearRespuestas(respuestas, id) {
+      const respuestasFormateadas = Object.entries(respuestas)
+        .map(([pregunta, respuesta]) => {
+          const respuestaTexto = convertirRespuesta(respuesta);
+          return `<li>${pregunta}: ${respuestaTexto}</li>`;
+        })
+        .join('');
+
+      return `
+        <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#respuestas-${id}">
+          Ver respuestas
+        </button>
+        <div class="collapse" id="respuestas-${id}">
+          <ul class="list-unstyled">
+            ${respuestasFormateadas}
+          </ul>
+        </div>
+      `;
+    }
+
+    // Función para generar recomendaciones basadas en los resultados
+    function generarRecomendaciones(respuestas) {
+      const recomendaciones = [];
+
+      // Recorrer todas las respuestas
+      respuestas.forEach((respuesta) => {
+        if (respuesta.tipo === 'traumaticos' && respuesta.resultado.includes("Alto")) {
+          recomendaciones.push(`${respuesta.nombre}: Busque apoyo psicológico para manejar eventos traumáticos.`);
+        }
+        if (respuesta.tipo === 'psicosocial' && (respuesta.resultado.includes("Alto") || respuesta.resultado.includes("Medio"))) {
+          recomendaciones.push(`${respuesta.nombre}: Considere hablar con su supervisor sobre su carga de trabajo.`);
+        }
+        if (respuesta.tipo === 'organizacional' && respuesta.resultado.includes("deficiente")) {
+          recomendaciones.push(`${respuesta.nombre}: Sugiera mejoras en el entorno laboral a recursos humanos.`);
+        }
+      });
+
+      return recomendaciones;
+    }
+
+    // Obtener y mostrar todos los resultados desde MongoDB
+    async function cargarResultados() {
+      try {
+        const response = await fetch('http://localhost:3000/api/cuestionario/respuestas');
+        if (!response.ok) {
+          throw new Error('Error al obtener las respuestas');
+        }
+        const respuestas = await response.json();
+
+        // Mostrar recomendaciones
+        const recomendaciones = generarRecomendaciones(respuestas);
+        const listaRecomendaciones = document.getElementById('recomendaciones');
+        listaRecomendaciones.innerHTML = recomendaciones
+          .map((rec) => `<li>${rec}</li>`)
+          .join('');
+
+        // Mostrar resultados en la tabla
+        const resultadosBody = document.getElementById('resultadosBody');
+        resultadosBody.innerHTML = respuestas
+          .map((respuesta, index) => `
+            <tr>
+              <td>${respuesta.nombre || "No disponible"}</td>
+              <td>${respuesta.tipo || "No disponible"}</td>
+              <td>
+                ${formatearRespuestas(respuesta.respuestas, index)}
+              </td>
+              <td>${respuesta.resultado || "No disponible"}</td>
+              <td>${new Date(respuesta.fecha).toLocaleString() || "No disponible"}</td>
+            </tr>
+          `)
+          .join('');
+      } catch (error) {
+        console.error('Error al obtener las respuestas:', error);
+        alert('Error al cargar los resultados desde la base de datos');
+      }
+    }
+
+    // Cargar los resultados al cargar la página
+    cargarResultados();
+  </script>
+
+  <!-- Bootstrap JS (necesario para el acordeón) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
