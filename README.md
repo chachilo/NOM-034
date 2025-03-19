@@ -149,4 +149,3 @@ La aplicación web NOM-035 está diseñada para ayudar a las organizaciones a cu
 
 ---
 
-¡Ahora puedes copiar y pegar este README en readme.so para formatearlo correctamente y descargarlo sin problemas! 🎯
